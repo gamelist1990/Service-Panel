@@ -164,7 +164,12 @@ export function usePanelController(uuid: string) {
         ...prev
       ];
     });
-    notify(result.ok ? `Action success: ${action}` : `Action failed: ${action}`, result.ok ? "ok" : "error");
+    if (result.ok) {
+      notify(`Action success: ${action}`, "ok");
+    } else {
+      const reason = summarizeActionFailure(action, result.output);
+      notify(`Action failed: ${action}${reason ? ` - ${reason}` : ""}`, "error");
+    }
     await refreshAll();
   }
 
@@ -255,4 +260,22 @@ export function usePanelController(uuid: string) {
     saveUnitEditor,
     clearLogs
   };
+}
+
+function summarizeActionFailure(action: ServiceAction, output: string): string {
+  const firstLine = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+
+  const lower = (output || "").toLowerCase();
+  if (action === "reload") {
+    if (lower.includes("job type reload is not applicable")) {
+      return "reload非対応のサービスです（restartを使ってください）";
+    }
+    if (lower.includes("service is not active") || lower.includes("inactive")) {
+      return "サービスが停止中です（start後にreload可能）";
+    }
+  }
+  return firstLine ?? "";
 }

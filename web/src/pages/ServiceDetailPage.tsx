@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ServiceAction, ServiceView } from "../types";
 
-const QUICK_ACTIONS: ServiceAction[] = ["start", "stop", "restart", "reload", "status", "enable", "disable"];
+const QUICK_ACTIONS: Array<{ action: ServiceAction; icon: string; tone: "normal" | "danger" | "primary" }> = [
+  { action: "start", icon: "fa-play", tone: "primary" },
+  { action: "stop", icon: "fa-stop", tone: "danger" },
+  { action: "restart", icon: "fa-rotate-right", tone: "normal" },
+  { action: "reload", icon: "fa-rotate", tone: "normal" },
+  { action: "status", icon: "fa-circle-info", tone: "normal" },
+  { action: "enable", icon: "fa-toggle-on", tone: "normal" },
+  { action: "disable", icon: "fa-toggle-off", tone: "normal" }
+];
 
 interface ServiceDetailPageProps {
   services: ServiceView[];
@@ -23,6 +31,7 @@ export function ServiceDetailPage({
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string>("");
+  const [runningAction, setRunningAction] = useState<ServiceAction | null>(null);
 
   const service = useMemo(() => services.find((item) => item.id === serviceId) ?? null, [services, serviceId]);
 
@@ -77,13 +86,16 @@ export function ServiceDetailPage({
     );
   }
 
+  const activeOk = service.active_state.trim().toLowerCase() === "active";
+  const enabledOk = service.enabled_state.trim().toLowerCase() === "enabled";
+
   return (
     <div className="content-grid service-detail-layout">
       <section className="panel">
         <header className="panel-header">
           <h2>
             <i className="fa-solid fa-server" />
-            {service.name}
+            Service Detail: {service.name}
           </h2>
           <div className="row">
             <Link to="/services" className="btn">
@@ -103,29 +115,64 @@ export function ServiceDetailPage({
           </div>
         </header>
 
-        <div className="detail-meta">
-          <p>
-            <span>Unit</span> {service.unit}
-          </p>
-          <p>
-            <span>Mode</span> {service.creation_mode}
-          </p>
-          <p>
-            <span>Command</span> {service.startup_command ?? "-"}
-          </p>
-          <p>
-            <span>Active</span> {service.active_state}
-          </p>
-          <p>
-            <span>Enabled</span> {service.enabled_state}
-          </p>
+        <div className="detail-grid">
+          <article className="detail-item">
+            <label>
+              <i className="fa-solid fa-file-code" />
+              Unit
+            </label>
+            <strong>{service.unit}</strong>
+          </article>
+          <article className="detail-item">
+            <label>
+              <i className="fa-solid fa-gears" />
+              Mode
+            </label>
+            <strong>{service.creation_mode}</strong>
+          </article>
+          <article className="detail-item detail-item-wide">
+            <label>
+              <i className="fa-solid fa-terminal" />
+              Command
+            </label>
+            <strong className="mono">{service.startup_command ?? "-"}</strong>
+          </article>
+          <article className="detail-item">
+            <label>
+              <i className="fa-solid fa-heart-pulse" />
+              Active
+            </label>
+            <strong className={`status-pill ${activeOk ? "ok" : "ng"}`}>{service.active_state}</strong>
+          </article>
+          <article className="detail-item">
+            <label>
+              <i className="fa-solid fa-power-off" />
+              Enabled
+            </label>
+            <strong className={`status-pill ${enabledOk ? "ok" : "ng"}`}>{service.enabled_state}</strong>
+          </article>
         </div>
 
-        <div className="chip-actions">
-          {QUICK_ACTIONS.map((action) => (
-            <button key={action} className="btn btn-chip" onClick={() => onServiceAction(service.id, action)}>
-              <i className="fa-solid fa-play" />
-              {action}
+        <div className="action-group-title">Quick Actions</div>
+        <div className="action-toolbar">
+          {QUICK_ACTIONS.map((entry) => (
+            <button
+              key={entry.action}
+              className={`btn btn-chip btn-action ${entry.tone === "danger" ? "btn-danger" : ""} ${
+                entry.tone === "primary" ? "btn-primary" : ""
+              }`}
+              onClick={async () => {
+                setRunningAction(entry.action);
+                try {
+                  await onServiceAction(service.id, entry.action);
+                } finally {
+                  setRunningAction(null);
+                }
+              }}
+              disabled={runningAction !== null}
+            >
+              <i className={`fa-solid ${runningAction === entry.action ? "fa-spinner fa-spin" : entry.icon}`} />
+              {entry.action}
             </button>
           ))}
         </div>
@@ -158,4 +205,3 @@ export function ServiceDetailPage({
     </div>
   );
 }
-
