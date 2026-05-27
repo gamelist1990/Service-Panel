@@ -1,0 +1,7 @@
+/target
+/backend/target
+/backend/data/*.json
+/backend/data/*.log
+/web/node_modules
+/web/dist
+/release

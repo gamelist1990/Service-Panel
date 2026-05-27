@@ -1,0 +1,52 @@
+name: Build Linux (x64/arm64)
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+
+      - name: Build bundled binary
+        run: |
+          chmod +x ./build-all.sh
+          ./build-all.sh
+
+      - name: Rename artifact binary
+        run: |
+          mv ./release/service-panel ./release/service-panel-linux-${{ matrix.arch }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-panel-linux-${{ matrix.arch }}
+          path: ./release/service-panel-linux-${{ matrix.arch }}

@@ -1,0 +1,34 @@
+import type { PropsWithChildren } from "react";
+
+interface ModalProps extends PropsWithChildren {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+}
+
+export function Modal({ open, title, onClose, children }: ModalProps) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section
+        className="modal-card"
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
+      >
+        <header className="modal-header">
+          <h3>{title}</h3>
+          <button className="btn btn-subtle" onClick={onClose}>
+            <i className="fa-solid fa-xmark" />
+            Close
+          </button>
+        </header>
+        <div className="modal-body">{children}</div>
+      </section>
+    </div>
+  );
+}
+
