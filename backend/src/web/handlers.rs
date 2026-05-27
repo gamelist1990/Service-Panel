@@ -19,8 +19,9 @@ use crate::{
     },
     error::AppError,
     infra::systemd::{
-        build_generated_unit_content, normalize_unit_name, read_journal, run_quiet_systemctl,
-        run_systemctl_action, run_systemctl_args, slugify_for_unit, write_unit_file_and_reload,
+        build_generated_unit_content, ensure_script_executable, normalize_startup_command,
+        normalize_unit_name, read_journal, run_quiet_systemctl, run_systemctl_action,
+        run_systemctl_args, slugify_for_unit, write_unit_file_and_reload,
     },
     state::AppState,
 };
@@ -47,7 +48,10 @@ pub fn build_router(state: AppState) -> Router {
             "/api/services/:id/unit-file",
             get(api_get_service_unit_file).put(api_update_service_unit_file),
         )
-        .route("/api/executions", get(api_executions))
+        .route(
+            "/api/executions",
+            get(api_executions).delete(api_clear_executions),
+        )
         .with_state(state)
 }
 
@@ -371,7 +375,13 @@ pub async fn api_create_service(
                 "startup_command is required for startup_command mode",
             ));
         }
-        Some(cmd)
+
+        let (normalized, script_path) =
+            normalize_startup_command(&cmd, req.working_directory.as_deref())?;
+        if let Some(path) = script_path.as_deref() {
+            ensure_script_executable(path).await?;
+        }
+        Some(normalized)
     } else {
         None
     };
@@ -586,6 +596,15 @@ pub async fn api_executions(
     ensure_access(&state, &auth.uuid).await?;
     let logs = state.storage.read_execution_logs(500).await?;
     Ok(Json(logs))
+}
+
+pub async fn api_clear_executions(
+    State(state): State<AppState>,
+    Query(auth): Query<AuthQuery>,
+) -> Result<StatusCode, AppError> {
+    ensure_access(&state, &auth.uuid).await?;
+    state.storage.clear_execution_logs().await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn hydrate_services(entries: Vec<ServiceEntry>) -> Vec<ServiceView> {

@@ -9,6 +9,7 @@ import { usePanelController } from "./hooks/usePanelController";
 import { getAccessUuid } from "./lib/auth";
 import { EditorPage } from "./pages/EditorPage";
 import { OverviewPage } from "./pages/OverviewPage";
+import { ServiceDetailPage } from "./pages/ServiceDetailPage";
 import { ServicesPage } from "./pages/ServicesPage";
 import type { GroupAction, ServiceAction, ServiceCreatePayload } from "./types";
 
@@ -57,8 +58,16 @@ function AppShell() {
     });
   }
 
+  function onOpenServiceDetail(serviceId: string) {
+    navigate(`/services/${serviceId}`);
+  }
+
   async function onSaveUnitEditor() {
     await safeRun(() => panel.saveUnitEditor(panel.unitEditor.content));
+  }
+
+  async function onClearLogs() {
+    await safeRun(() => panel.clearLogs());
   }
 
   async function onAddGroup(name: string) {
@@ -93,6 +102,7 @@ function AppShell() {
             <ServicesPage
               groups={panel.groups}
               groupedServices={panel.groupedServices}
+              onOpenServiceDetail={onOpenServiceDetail}
               onDeleteGroup={(id) => safeRun(() => panel.deleteGroup(id))}
               onGroupAction={onGroupAction}
               onAssignGroup={(serviceId, groupId) => safeRun(() => panel.assignGroup(serviceId, groupId))}
@@ -100,6 +110,17 @@ function AppShell() {
               onOpenJournal={onOpenJournal}
               onOpenUnitEditor={onOpenUnitEditor}
               onDeleteService={(id) => safeRun(() => panel.deleteService(id))}
+            />
+          }
+        />
+        <Route
+          path="/services/:serviceId"
+          element={
+            <ServiceDetailPage
+              services={panel.services}
+              onServiceAction={onServiceAction}
+              onOpenUnitEditor={onOpenUnitEditor}
+              fetchServiceJournal={panel.fetchServiceJournal}
             />
           }
         />
@@ -114,6 +135,7 @@ function AppShell() {
               onUnitEditorChange={(next) => panel.setUnitEditor((prev) => ({ ...prev, content: next }))}
               onSaveUnitEditor={onSaveUnitEditor}
               onCloseUnitEditor={panel.closeUnitEditor}
+              onClearLogs={onClearLogs}
             />
           }
         />
@@ -138,4 +160,3 @@ export function App() {
     </HashRouter>
   );
 }
-

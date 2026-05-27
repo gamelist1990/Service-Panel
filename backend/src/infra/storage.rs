@@ -145,4 +145,10 @@ impl Storage {
         }
         Ok(logs)
     }
+
+    pub async fn clear_execution_logs(&self) -> Result<()> {
+        let _guard = self.lock.lock().await;
+        tokio::fs::write(&self.exec_log_path, "").await?;
+        Ok(())
+    }
 }

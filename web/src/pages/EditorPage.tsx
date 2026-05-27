@@ -16,6 +16,7 @@ interface EditorPageProps {
   onUnitEditorChange: (next: string) => void;
   onSaveUnitEditor: () => Promise<void>;
   onCloseUnitEditor: () => void;
+  onClearLogs: () => Promise<void>;
 }
 
 export function EditorPage({
@@ -25,7 +26,8 @@ export function EditorPage({
   unitEditor,
   onUnitEditorChange,
   onSaveUnitEditor,
-  onCloseUnitEditor
+  onCloseUnitEditor,
+  onClearLogs
 }: EditorPageProps) {
   return (
     <div className="content-grid split-editor">
@@ -42,9 +44,8 @@ export function EditorPage({
       </div>
       <div className="stack">
         <JournalCard selectedServiceId={selectedServiceId} journal={journal} />
-        <ExecutionLogsCard logs={logs} />
+        <ExecutionLogsCard logs={logs} onClear={onClearLogs} />
       </div>
     </div>
   );
 }
-

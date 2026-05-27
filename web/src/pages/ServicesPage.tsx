@@ -10,6 +10,7 @@ interface GroupedServices {
 interface ServicesPageProps {
   groups: Group[];
   groupedServices: GroupedServices[];
+  onOpenServiceDetail: (serviceId: string) => void;
   onDeleteGroup: (id: string) => Promise<void>;
   onGroupAction: (groupId: string, action: GroupAction) => Promise<void>;
   onAssignGroup: (serviceId: string, groupId: string | null) => Promise<void>;
@@ -22,6 +23,7 @@ interface ServicesPageProps {
 export function ServicesPage({
   groups,
   groupedServices,
+  onOpenServiceDetail,
   onDeleteGroup,
   onGroupAction,
   onAssignGroup,
@@ -35,6 +37,7 @@ export function ServicesPage({
       <ServiceGroupBoard
         groups={groups}
         groupedServices={groupedServices}
+        onOpenServiceDetail={onOpenServiceDetail}
         onDeleteGroup={onDeleteGroup}
         onGroupAction={onGroupAction}
         onAssignGroup={onAssignGroup}
@@ -46,4 +49,3 @@ export function ServicesPage({
     </div>
   );
 }
-

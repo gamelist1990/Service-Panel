@@ -1,4 +1,4 @@
-use std::process::Stdio;
+use std::{path::PathBuf, process::Stdio};
 
 use anyhow::{Context, Result};
 use tokio::{fs::create_dir_all, process::Command};
@@ -41,6 +41,89 @@ pub fn build_generated_unit_content(
     text.push_str("[Install]\n");
     text.push_str("WantedBy=multi-user.target\n");
     text
+}
+
+pub fn normalize_startup_command(
+    raw: &str,
+    working_directory: Option<&str>,
+) -> Result<(String, Option<PathBuf>), AppError> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::bad_request("ExecStart command is required"));
+    }
+
+    let mut parts = trimmed.split_whitespace();
+    let Some(head) = parts.next() else {
+        return Err(AppError::bad_request("ExecStart command is required"));
+    };
+    let tail = parts.collect::<Vec<_>>().join(" ");
+
+    let (resolved_head, script_path) = if head.starts_with("./") {
+        let Some(wd) = working_directory.map(str::trim).filter(|v| !v.is_empty()) else {
+            return Err(AppError::bad_request(
+                "relative ExecStart like ./server.sh requires WorkingDirectory",
+            ));
+        };
+        let base = PathBuf::from(wd);
+        let full = base.join(head.trim_start_matches("./"));
+        let Some(full_text) = full.to_str() else {
+            return Err(AppError::bad_request(
+                "ExecStart path contains invalid utf-8",
+            ));
+        };
+        (
+            full_text.to_string(),
+            if full_text.ends_with(".sh") {
+                Some(full)
+            } else {
+                None
+            },
+        )
+    } else if head.contains('/') && !head.starts_with('/') {
+        return Err(AppError::bad_request(
+            "ExecStart path must be absolute (example: /opt/app/server.sh)",
+        ));
+    } else {
+        (
+            head.to_string(),
+            if head.starts_with('/') && head.ends_with(".sh") {
+                Some(PathBuf::from(head))
+            } else {
+                None
+            },
+        )
+    };
+
+    let command = if tail.is_empty() {
+        resolved_head
+    } else {
+        format!("{} {}", resolved_head, tail)
+    };
+    Ok((command, script_path))
+}
+
+#[cfg(unix)]
+pub async fn ensure_script_executable(path: &std::path::Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let metadata = tokio::fs::metadata(path).await?;
+    let mut perms = metadata.permissions();
+    let mode = perms.mode();
+    let desired = mode | 0o755;
+    if mode != desired {
+        perms.set_mode(desired);
+        tokio::fs::set_permissions(path, perms).await?;
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+pub async fn ensure_script_executable(_path: &std::path::Path) -> Result<()> {
+    Ok(())
 }
 
 pub fn slugify_for_unit(input: &str) -> String {
@@ -124,7 +207,15 @@ pub async fn run_systemctl_action(action: &str, unit: &str) -> (bool, String) {
         return (!not_found, output);
     }
 
-    run_systemctl_args(&[action, unit]).await
+    let (ok, output) = run_systemctl_args(&[action, unit]).await;
+    if ok {
+        return (ok, output);
+    }
+
+    if matches!(action, "start" | "restart" | "reload") {
+        return (ok, append_exec_hint_if_needed(output));
+    }
+    (ok, output)
 }
 
 pub async fn run_systemctl_args(args: &[&str]) -> (bool, String) {
@@ -212,4 +303,16 @@ fn sanitize_unit_line(input: &str) -> String {
         .chars()
         .map(|c| if c == '\n' || c == '\r' { ' ' } else { c })
         .collect::<String>()
+}
+
+fn append_exec_hint_if_needed(output: String) -> String {
+    let lower = output.to_ascii_lowercase();
+    if !(lower.contains("203/exec") || lower.contains("failed at step exec")) {
+        return output;
+    }
+
+    format!(
+        "{}\n\nHint: status=203/EXEC usually means ExecStart path/permission issue.\n- Use absolute path (e.g. /opt/app/server.sh)\n- Ensure script is executable: chmod +x /opt/app/server.sh\n- Ensure shebang exists: #!/usr/bin/env bash",
+        output
+    )
 }

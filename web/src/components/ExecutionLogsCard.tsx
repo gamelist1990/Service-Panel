@@ -2,9 +2,10 @@ import type { ExecutionLogEntry } from "../types";
 
 interface ExecutionLogsCardProps {
   logs: ExecutionLogEntry[];
+  onClear: () => Promise<void>;
 }
 
-export function ExecutionLogsCard({ logs }: ExecutionLogsCardProps) {
+export function ExecutionLogsCard({ logs, onClear }: ExecutionLogsCardProps) {
   return (
     <section className="panel">
       <header className="panel-header">
@@ -12,6 +13,10 @@ export function ExecutionLogsCard({ logs }: ExecutionLogsCardProps) {
           <i className="fa-solid fa-clock-rotate-left" />
           Execution Logs
         </h2>
+        <button className="btn btn-danger" onClick={onClear} disabled={logs.length === 0}>
+          <i className="fa-solid fa-trash" />
+          Clear Logs
+        </button>
       </header>
 
       <div className="log-list">
@@ -27,4 +32,3 @@ export function ExecutionLogsCard({ logs }: ExecutionLogsCardProps) {
     </section>
   );
 }
-

@@ -19,6 +19,7 @@ interface GroupedServices {
 interface ServiceGroupBoardProps {
   groups: Group[];
   groupedServices: GroupedServices[];
+  onOpenServiceDetail: (serviceId: string) => void;
   onDeleteGroup: (id: string) => Promise<void>;
   onGroupAction: (groupId: string, action: GroupAction) => Promise<void>;
   onAssignGroup: (serviceId: string, groupId: string | null) => Promise<void>;
@@ -31,6 +32,7 @@ interface ServiceGroupBoardProps {
 export function ServiceGroupBoard({
   groups,
   groupedServices,
+  onOpenServiceDetail,
   onDeleteGroup,
   onGroupAction,
   onAssignGroup,
@@ -80,7 +82,11 @@ export function ServiceGroupBoard({
             <div className="service-grid">
               {group.services.map((service) => (
                 <article className="service-card" key={service.id}>
-                  <div className="service-meta">
+                  <button
+                    className="service-meta service-meta-button"
+                    onClick={() => onOpenServiceDetail(service.id)}
+                    title="Open service details"
+                  >
                     <strong>{service.name}</strong>
                     <p>{service.unit}</p>
                     <p>mode: {service.creation_mode}</p>
@@ -88,7 +94,7 @@ export function ServiceGroupBoard({
                     <p>
                       active: <span>{service.active_state}</span> / enabled: <span>{service.enabled_state}</span>
                     </p>
-                  </div>
+                  </button>
 
                   <div className="service-actions">
                     <select
@@ -133,4 +139,3 @@ export function ServiceGroupBoard({
     </section>
   );
 }
-

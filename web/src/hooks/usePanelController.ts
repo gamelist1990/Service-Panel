@@ -178,9 +178,16 @@ export function usePanelController(uuid: string) {
   }
 
   async function openJournal(serviceId: string) {
-    const result = await api<ActionResponse>(`/api/services/${serviceId}/journal?lines=250`, { uuid });
-    setJournal(result.output || "(no logs)");
+    const output = await fetchServiceJournal(serviceId, 250);
+    setJournal(output);
     setSelectedServiceId(serviceId);
+  }
+
+  async function fetchServiceJournal(serviceId: string, lines = 250) {
+    const result = await api<ActionResponse>(`/api/services/${serviceId}/journal?lines=${lines}`, { uuid });
+    const output = result.output || "(no logs)";
+    setSelectedServiceId(serviceId);
+    return output;
   }
 
   async function openUnitEditor(serviceId: string) {
@@ -211,6 +218,13 @@ export function usePanelController(uuid: string) {
     await refreshAll();
   }
 
+  async function clearLogs() {
+    await api<null>("/api/executions", { method: "DELETE", uuid });
+    setLogs([]);
+    notify("Execution logs cleared", "ok");
+    await refreshAll();
+  }
+
   return {
     busy,
     groups,
@@ -235,9 +249,10 @@ export function usePanelController(uuid: string) {
     runServiceAction,
     assignGroup,
     openJournal,
+    fetchServiceJournal,
     openUnitEditor,
     closeUnitEditor,
-    saveUnitEditor
+    saveUnitEditor,
+    clearLogs
   };
 }
-

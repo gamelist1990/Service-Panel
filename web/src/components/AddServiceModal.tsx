@@ -147,7 +147,8 @@ export function AddServiceModal({ open, groups, onClose, onSubmit }: AddServiceM
             </label>
             <p className="hint">
               <i className="fa-solid fa-circle-info" />
-              `User=sudo` は無効です。root実行なら空欄、または実ユーザー名を指定してください。
+              `User=sudo` は無効です。root実行なら空欄、または実ユーザー名を指定。`./server.sh` は
+              `WorkingDirectory` 併用時に絶対パスへ自動補正し、`.sh` は自動で実行権限を付与します。
             </p>
           </>
         )}
