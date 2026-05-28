@@ -71,7 +71,7 @@ cargo build --release
 別コマンドとして発行する場合:
 
 ```bash
-./release/service-panel issue-url --host 127.0.0.1 --port 5600 --ttl-minutes 120
+./release/service-panel issue-url --host localhost --port 5600 --ttl-minutes 120
 ```
 
 ### 3) バックグラウンド起動（プロンプトをすぐ返す）

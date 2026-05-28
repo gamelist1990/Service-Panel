@@ -16,7 +16,7 @@ pub enum Commands {
         host: String,
     },
     IssueUrl {
-        #[arg(long, default_value = "127.0.0.1")]
+        #[arg(long, default_value = "localhost")]
         host: String,
         #[arg(long, default_value = "5600")]
         port: u16,

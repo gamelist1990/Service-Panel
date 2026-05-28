@@ -25,6 +25,13 @@ use crate::{
     web::handlers::build_router,
 };
 
+fn display_host(host: &str) -> &str {
+    match host {
+        "0.0.0.0" | "::" | "127.0.0.1" => "localhost",
+        _ => host,
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     if cfg!(not(target_os = "linux")) {
@@ -86,7 +93,11 @@ async fn serve(storage: Arc<Storage>, host: String, port: u16) -> Result<()> {
         .parse()
         .context("invalid bind address")?;
 
-    println!("Service Panel backend started on http://{}", addr);
+    println!(
+        "Service Panel backend started on http://{}:{}",
+        display_host(&host),
+        port
+    );
     let listener = tokio::net::TcpListener::bind(addr).await?;
     let server_task = tokio::spawn(async move { axum::serve(listener, app).await });
 
@@ -141,7 +152,10 @@ async fn run_console(storage: Arc<Storage>, host: String, port: u16) -> Result<(
                 let token = issue_url_internal(storage.clone(), ttl).await?;
                 println!(
                     "Temporary URL (expires {}): http://{}:{}/request?uuid={}",
-                    token.expires_at, host, port, token.uuid
+                    token.expires_at,
+                    display_host(&host),
+                    port,
+                    token.uuid
                 );
             }
             "exit" | "quit" => break,
@@ -158,7 +172,10 @@ async fn issue_url(storage: Arc<Storage>, host: String, port: u16, ttl_minutes: 
 
     println!(
         "Temporary URL (expires {}): http://{}:{}/request?uuid={}",
-        token.expires_at, host, port, token.uuid
+        token.expires_at,
+        display_host(&host),
+        port,
+        token.uuid
     );
     Ok(())
 }
