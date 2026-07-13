@@ -56,82 +56,96 @@ export function ServiceGroupBoard({
         {groupedServices.map((group) => (
           <article key={group.id} className="group-block">
             <header className="group-header">
-              <h3>{group.name}</h3>
+              <h3>
+                {group.name}
+                <span className="badge" style={{ marginLeft: 4 }}>{group.services.length}</span>
+              </h3>
               <div className="group-controls">
-                <button className="btn" onClick={() => onGroupAction(group.id, "start")}>
+                <button className="btn btn-sm" onClick={() => onGroupAction(group.id, "start")} title="Start all">
                   <i className="fa-solid fa-play" />
-                  Start All
+                  <span>Start</span>
                 </button>
-                <button className="btn" onClick={() => onGroupAction(group.id, "stop")}>
+                <button className="btn btn-sm" onClick={() => onGroupAction(group.id, "stop")} title="Stop all">
                   <i className="fa-solid fa-stop" />
-                  Stop All
+                  <span>Stop</span>
                 </button>
-                <button className="btn" onClick={() => onGroupAction(group.id, "restart")}>
+                <button className="btn btn-sm" onClick={() => onGroupAction(group.id, "restart")} title="Restart all">
                   <i className="fa-solid fa-rotate-right" />
-                  Restart All
+                  <span>Restart</span>
                 </button>
                 {group.id !== "ungrouped" && (
-                  <button className="btn btn-danger" onClick={() => onDeleteGroup(group.id)}>
+                  <button className="btn btn-sm btn-danger" onClick={() => onDeleteGroup(group.id)} title="Delete group">
                     <i className="fa-solid fa-trash" />
-                    Delete Group
                   </button>
                 )}
               </div>
             </header>
 
             <div className="service-grid">
-              {group.services.map((service) => (
-                <article className="service-card" key={service.id}>
-                  <button
-                    className="service-meta service-meta-button"
-                    onClick={() => onOpenServiceDetail(service.id)}
-                    title="Open service details"
-                  >
-                    <strong>{service.name}</strong>
-                    <p>{service.unit}</p>
-                    <p>mode: {service.creation_mode}</p>
-                    {service.startup_command && <p>cmd: {service.startup_command}</p>}
-                    <p>
-                      active: <span>{service.active_state}</span> / enabled: <span>{service.enabled_state}</span>
-                    </p>
-                  </button>
-
-                  <div className="service-actions">
-                    <select
-                      value={service.group_id ?? ""}
-                      onChange={(event) => onAssignGroup(service.id, event.target.value || null)}
+              {group.services.map((service) => {
+                const activeOk = service.active_state.trim().toLowerCase() === "active";
+                const enabledOk = service.enabled_state.trim().toLowerCase() === "enabled";
+                return (
+                  <article className="service-card" key={service.id}>
+                    <button
+                      className="service-meta service-meta-button"
+                      onClick={() => onOpenServiceDetail(service.id)}
+                      title="Open service details"
                     >
-                      <option value="">Ungrouped</option>
-                      {groups.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </select>
+                      <strong>{service.name}</strong>
+                      <p>{service.unit}</p>
+                      {service.startup_command && <p>cmd: {service.startup_command}</p>}
+                      <div className="service-badges">
+                        <span className={`badge ${activeOk ? "ok" : "ng"}`}>
+                          <i className="fa-solid fa-heart-pulse" />
+                          {service.active_state}
+                        </span>
+                        <span className={`badge ${enabledOk ? "ok" : "warn"}`}>
+                          <i className="fa-solid fa-power-off" />
+                          {service.enabled_state}
+                        </span>
+                        <span className="badge">{service.creation_mode}</span>
+                      </div>
+                    </button>
 
-                    <div className="chip-actions">
-                      {SERVICE_ACTIONS.map((entry) => (
-                        <button key={entry.action} className="btn btn-chip" onClick={() => onServiceAction(service.id, entry.action)}>
-                          <i className={`fa-solid ${entry.icon}`} />
-                          {entry.action}
+                    <div className="service-actions">
+                      <select
+                        value={service.group_id ?? ""}
+                        onChange={(event) => onAssignGroup(service.id, event.target.value || null)}
+                        aria-label="Assign group"
+                      >
+                        <option value="">Ungrouped</option>
+                        {groups.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="chip-actions">
+                        {SERVICE_ACTIONS.map((entry) => (
+                          <button key={entry.action} className="btn btn-chip" onClick={() => onServiceAction(service.id, entry.action)}>
+                            <i className={`fa-solid ${entry.icon}`} />
+                            {entry.action}
+                          </button>
+                        ))}
+                        <button className="btn btn-chip" onClick={() => onOpenJournal(service.id)}>
+                          <i className="fa-solid fa-scroll" />
+                          journal
                         </button>
-                      ))}
-                      <button className="btn btn-chip" onClick={() => onOpenJournal(service.id)}>
-                        <i className="fa-solid fa-scroll" />
-                        journal
-                      </button>
-                      <button className="btn btn-chip" onClick={() => onOpenUnitEditor(service.id)}>
-                        <i className="fa-solid fa-pen-to-square" />
-                        unit file
-                      </button>
-                      <button className="btn btn-chip btn-danger" onClick={() => onDeleteService(service.id)}>
-                        <i className="fa-solid fa-trash" />
-                        delete
-                      </button>
+                        <button className="btn btn-chip" onClick={() => onOpenUnitEditor(service.id)}>
+                          <i className="fa-solid fa-pen-to-square" />
+                          unit
+                        </button>
+                        <button className="btn btn-chip btn-danger" onClick={() => onDeleteService(service.id)}>
+                          <i className="fa-solid fa-trash" />
+                          delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </article>
         ))}

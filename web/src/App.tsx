@@ -2,6 +2,7 @@ import { useState } from "react";
 import { HashRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { AddGroupModal } from "./components/AddGroupModal";
 import { AddServiceModal } from "./components/AddServiceModal";
+import { BottomNav } from "./components/BottomNav";
 import { HeaderBar } from "./components/HeaderBar";
 import { StatusCards } from "./components/StatusCards";
 import { ToastStack } from "./components/ToastStack";
@@ -89,9 +90,10 @@ function AppShell() {
         }}
       />
 
-      <StatusCards status={panel.systemStatus} />
+      <main className="app-main">
+        <StatusCards status={panel.systemStatus} />
 
-      <Routes>
+        <Routes>
         <Route
           path="/"
           element={<OverviewPage status={panel.systemStatus} services={panel.services} logs={panel.logs} />}
@@ -139,7 +141,10 @@ function AppShell() {
             />
           }
         />
-      </Routes>
+        </Routes>
+      </main>
+
+      <BottomNav />
 
       <AddGroupModal open={showGroupModal} onClose={() => setShowGroupModal(false)} onSubmit={onAddGroup} />
       <AddServiceModal

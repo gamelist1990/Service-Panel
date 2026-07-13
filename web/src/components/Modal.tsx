@@ -12,7 +12,7 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <section
         className="modal-card"
         onClick={(event) => {
@@ -21,9 +21,13 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       >
         <header className="modal-header">
           <h3>{title}</h3>
-          <button className="btn btn-subtle" onClick={onClose}>
+          <button
+            className="icon-btn"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close"
+          >
             <i className="fa-solid fa-xmark" />
-            Close
           </button>
         </header>
         <div className="modal-body">{children}</div>
