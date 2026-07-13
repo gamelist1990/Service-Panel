@@ -83,6 +83,10 @@ fn serve_bg(host: String, port: u16) -> Result<()> {
 
 async fn serve(storage: Arc<Storage>, host: String, port: u16) -> Result<()> {
     storage.ensure_files().await?;
+    println!(
+        "Service Panel data dir : {}",
+        storage.data_dir.display()
+    );
     let state = AppState {
         storage: storage.clone(),
     };

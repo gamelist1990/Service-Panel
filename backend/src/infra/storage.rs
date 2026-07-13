@@ -14,10 +14,10 @@ use crate::{
     infra::systemd::normalize_unit_name,
 };
 
-const DATA_DIR: &str = "data";
-const CONFIG_FILE: &str = "data/config.json";
-const TOKEN_FILE: &str = "data/url_tokens.json";
-const EXEC_LOG_FILE: &str = "data/execution.log";
+const DATA_DIR_NAME: &str = "data";
+const CONFIG_FILE_NAME: &str = "config.json";
+const TOKEN_FILE_NAME: &str = "url_tokens.json";
+const EXEC_LOG_FILE_NAME: &str = "execution.log";
 const DEFAULT_SYSTEMD_UNIT_DIR: &str = "/etc/systemd/system";
 
 pub struct Storage {
@@ -30,18 +30,33 @@ pub struct Storage {
 }
 
 impl Storage {
+    fn resolve_data_dir() -> PathBuf {
+        if let Ok(dir) = std::env::var("SERVICE_PANEL_DATA_DIR") {
+            if !dir.is_empty() {
+                return PathBuf::from(dir);
+            }
+        }
+
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                return parent.join(DATA_DIR_NAME);
+            }
+        }
+
+        PathBuf::from(DATA_DIR_NAME)
+    }
+
     pub fn new() -> Result<Self> {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let data_dir = root.join(DATA_DIR);
+        let data_dir = Self::resolve_data_dir();
         let systemd_unit_dir = std::env::var("SERVICE_PANEL_SYSTEMD_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|_| PathBuf::from(DEFAULT_SYSTEMD_UNIT_DIR));
 
         Ok(Self {
-            data_dir: data_dir.clone(),
-            config_path: root.join(CONFIG_FILE),
-            token_path: root.join(TOKEN_FILE),
-            exec_log_path: root.join(EXEC_LOG_FILE),
+            config_path: data_dir.join(CONFIG_FILE_NAME),
+            token_path: data_dir.join(TOKEN_FILE_NAME),
+            exec_log_path: data_dir.join(EXEC_LOG_FILE_NAME),
+            data_dir,
             systemd_unit_dir,
             lock: Mutex::new(()),
         })
